@@ -1,12 +1,20 @@
 package controllers
 
-import dao.{Inventories, Players}
+//import java.io.File
+
+import java.sql.{DriverManager, Connection, Blob}
+
+import dao.{EmailTemplates, Inventories, Players}
 import models.{PlayerBag, Item, Inventory, Player}
+import play.api.Logger
 import play.api.data._
 import play.api.data.Forms._
 import play.api.db.slick.DBAction
+import play.api.libs.Files.TemporaryFile
 import play.api.libs.json.Json
+import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc._
+
 
 object Application extends Controller {
 
@@ -57,6 +65,43 @@ object Application extends Controller {
   def index = Action {
     Ok(views.html.index(Players.findAll))
   }
+
+//  def getMyConnection:Connection =
+//  {
+//    val connectionURL:String = "jdbc:mysql://localhost:5432/postgres";
+//    Class.forName("com.mysql.jdbc.Driver");
+//    val con:Connection = DriverManager.getConnection(connectionURL, "postgres", "postgres");
+//    return con;
+//  }
+
+  def upload(id: Int) = Action(parse.temporaryFile) { implicit rs =>
+    Logger.debug("Uploading template ")
+        //filePart: FilePart[TemporaryFile] =>
+
+
+        try {
+          Logger.debug("Fisier gasit")
+          import java.io.File
+          //MultipartFormData mfd = rs.body.file
+          Logger.debug("Filename: " + rs.body.file.getName + " ---- ContentType: FARA")
+          val source = scala.io.Source.fromFile(rs.body.file)
+          Logger.debug("Source: " + source.getLines.foreach(x => println(x)))
+          //var myBlob: Blob = getMyConnection.createBlob()
+          //myBlob.setBytes(1,)
+
+          val fileToByteArray = source.map(_.toByte).toArray
+          source.close()
+         // myBlob.setBytes(1,fileToByteArray)
+          EmailTemplates.update(fileToByteArray, id)
+          //file.ref.moveTo(new File(Play.application.path().getAbsolutePath + file.filename))
+          Ok("Upload reusit")
+        } catch {
+          case e: Exception => Logger.error("Eroare - inserare nereusita: " + e.getMessage)
+            BadRequest("Error - File couldn't be uploaded")
+        }
+
+  }
+
 
   def addSinglePlayer = DBAction { implicit rs =>
     val player = playerForm.bindFromRequest.get
